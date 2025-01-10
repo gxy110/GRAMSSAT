@@ -1,5 +1,5 @@
 # GRAMSSAT
-Code of the paper GRAMSSAT: AnEfficient Label Inference Attack against Two-party Split Learning based on Gradient Matching and Semi-supervised Learning.
+Code of the paper GRAMSSAT: An Efficient Label Inference Attack against Two-party Split Learning based on Gradient Matching and Semi-supervised Learning.
 
 ## Environment Setup
 ./env_setup.sh

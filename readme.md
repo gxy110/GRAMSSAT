@@ -23,5 +23,8 @@ CUDA_VISIBLE_DEVICES=0 python train_surrogate.py --dataset-name CIFAR100 --datas
 ### validate attack performance
 CUDA_VISIBLE_DEVICES=0 python validate.py --dataset CIFAR100 --dataset-path ./datasets/Datasets/CIFAR100 --resume-name-bottom CIFAR100_saved_framework_lr=0.1_n=4_idx=1.pth --resume-name-surrogate CIFAR100_saved_framework_lr=0.001_alpha=0.0_beta=1.0_num_layer=4_activation_func=None_use_bn=True_idx=1.pth
 
+### baseline:model_completion
+CUDA_VISIBLE_DEVICES=0 python model_completion.py --dataset-name CIFAR100 --dataset-path ./datasets/Datasets/CIFAR100 --n-labeled 400 --k 5 --resume-sub-dir surrogate_test --resume-name CIFAR100_saved_framework_lr=0.1_n=4_idx=1.pth --print-to-txt 1 --epochs 50 --idx 1
+
 ### Acknowledgements
 This project is based on the [label-inference-attacks](https://github.com/FuChong-cyber/label-inference-attacks.git) by FuChong-cyber.

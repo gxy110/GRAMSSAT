@@ -261,16 +261,11 @@ def train(labeled_trainloader, unlabeled_trainloader, model, optimizer, ema_opti
         else:
             try:
                 inputs_x, targets_x = labeled_train_iter.next()
-                print("line 297 input_x: ",inputs_x)
-                print("line 297 input: ", inputs_x.shape)  # [32, 3, 32, 32]
-                print("line 297 target: ", targets_x.shape)  # [32]
-                # inputs_x, targets_x = labeled_trainloader.dataset[batch_idx]
+
             except StopIteration:
                 labeled_train_iter = iter(labeled_trainloader)  
                 inputs_x, targets_x = labeled_train_iter.next()
-                print("line 303 input_x: ",inputs_x)
-                print("line 303 input: ", inputs_x.shape)  # [32, 3, 32, 32]
-                print("line 303 target: ", targets_x.shape)
+
             try:
                 inputs_u, _ = unlabeled_train_iter.next()
             except StopIteration:
@@ -282,7 +277,6 @@ def train(labeled_trainloader, unlabeled_trainloader, model, optimizer, ema_opti
 
         # in vertical federated learning scenario, attacker(party A) only has part of features, i.e. half of the img.
         inputs_x = clip_function(inputs_x, args.half)
-        print("line 316 input: ", inputs_x.shape)  # [32, 3, 32, 16]
         inputs_u = clip_function(inputs_u, args.half)
         inputs_x = inputs_x.type(torch.float)
         inputs_u = inputs_u.type(torch.float)
@@ -292,7 +286,6 @@ def train(labeled_trainloader, unlabeled_trainloader, model, optimizer, ema_opti
         # Transform label to one-hot
         targets_x = targets_x.view(-1, 1).type(torch.long)
         targets_x = torch.zeros(batch_size, num_classes).scatter_(1, targets_x, 1)  #（32，10）
-        print("line 326 target: ", targets_x.shape)  # [32, 10]
 
         if use_cuda:
             inputs_x, targets_x = inputs_x.cuda(), targets_x.cuda(non_blocking=True)
@@ -301,7 +294,6 @@ def train(labeled_trainloader, unlabeled_trainloader, model, optimizer, ema_opti
         with torch.no_grad():
             targets_x.view(-1, 1).type(torch.long)  # compute guessed labels of unlabel samples
             outputs_u = model(inputs_u)
-            print("line 335 output: ", targets_x.shape)  # [32, 10]
             p = torch.softmax(outputs_u, dim=1)  # (32，100)
             pt = p ** (1 / args.T)  
             targets_u = pt / pt.sum(dim=1, keepdim=True) 
@@ -310,8 +302,6 @@ def train(labeled_trainloader, unlabeled_trainloader, model, optimizer, ema_opti
         # mixup
         all_inputs = torch.cat([inputs_x, inputs_u], dim=0)  # （64，3，32，16）
         all_targets = torch.cat([targets_x, targets_u], dim=0)
-        print("line 343 all_inputs: ", all_inputs.shape)  # [64, 3, 32, 16]
-        print("line 344 all_targets: ", all_targets.shape)  # [64, 10]
 
         l = np.random.beta(args.alpha, args.alpha) 
 
@@ -324,25 +314,20 @@ def train(labeled_trainloader, unlabeled_trainloader, model, optimizer, ema_opti
 
         mixed_input = l * input_a + (1 - l) * input_b 
         mixed_target = l * target_a + (1 - l) * target_b
-        print("line 357 mixed_input: ", mixed_input.shape)  # [64, 3, 32, 16]
-        print("line 358 mixed_target: ", mixed_target.shape)  # [64, 10]
+
 
         # interleave labeled and unlabeled samples between batches to get correct batch norm calculation
         mixed_input = list(torch.split(mixed_input, batch_size))  
-        print("line 363 mixed_input[0]: ", mixed_input[0].shape)  # [32, 3, 32, 16]
         mixed_input = interleave(mixed_input, batch_size)  
 
         logits = [model(mixed_input[0])]  
         for input in mixed_input[1:]:
             logits.append(model(input))
-        print("line 367 logits[0]: ", logits[0].shape)  # [32, 10]
 
         # put interleaved samples back
         logits = interleave(logits, batch_size)  
         logits_x = logits[0]
         logits_u = torch.cat(logits[1:], dim=0)
-        print("line 374 logits_x: ", logits_x.shape)  # [32, 10]
-        print("line 375 logits_u: ", logits_u.shape)  # [32, 10]
 
         Lx, Lu, w = criterion(logits_x, mixed_target[:batch_size], logits_u, mixed_target[batch_size:],
                               epoch + batch_idx / args.val_iteration)
